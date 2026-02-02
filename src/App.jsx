@@ -1,4 +1,15 @@
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Tooltip } from '@heroui/react';
+import {
+  Button,
+  Card,
+  CardBody,
+  Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  Tooltip,
+} from '@heroui/react';
 import { atom, useAtom } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -41,6 +52,8 @@ export default function App() {
   const [projects, setProjects] = useAtom(projectsAtom);
   const [activeProjectId, setActiveProjectId] = useAtom(activeProjectIdAtom);
   const [checkins, setCheckins] = useAtom(checkinsAtom);
+  const [selectedDate, setSelectedDate] = useAtom(selectedDateAtom);
+  const [isDialogOpen, setIsDialogOpen] = useAtom(isDialogOpenAtom);
   const [newProjectName, setNewProjectName] = useAtom(newProjectNameAtom);
 
   useEffect(() => {
@@ -186,58 +199,91 @@ export default function App() {
                   </div>
                 ))}
               </div>
-            ))}
-          </div>
-          <div className="weeks">
-            {weeks.map((week, weekIndex) => (
-              <div key={`week-${weekIndex}`} className="week-column">
-                {week.map((date) => {
-                  const key = toDateKey(date);
-                  const isFuture = date > today;
-                  const isChecked = !!activeCheckins[key];
-                  const level = isChecked ? 'level-4' : 'level-0';
-                  return (
-                    <Tooltip
-                      key={key}
-                      content={
-                        <div className="tooltip-content">
-                          <div>{key}</div>
-                          <div>{isChecked ? '已打卡' : '未打卡'}</div>
-                        </div>
-                      }
-                      showArrow
-                    >
-                      <span className="day-cell-wrapper">
-                        <button
-                          type="button"
-                          className={`day-cell ${level}`}
-                          disabled={isFuture}
-                          onClick={() => handleOpenDialog(date)}
-                          aria-label={`${key} ${isChecked ? '已打卡' : '未打卡'}`}
-                        />
-                      </span>
-                    </Tooltip>
-                  );
-                })}
+              <div className="flex gap-1">
+                {weeks.map((week, weekIndex) => (
+                  <div key={`week-${weekIndex}`} className="week-column">
+                    {week.map((date) => {
+                      const key = toDateKey(date);
+                      const isFuture = date > today;
+                      const isChecked = !!activeCheckins[key];
+                      const level = isChecked ? 'level-4' : 'level-0';
+                      return (
+                        <Tooltip
+                          key={key}
+                          content={
+                            <div className="tooltip-content">
+                              <div>{key}</div>
+                              <div>{isChecked ? '已打卡' : '未打卡'}</div>
+                            </div>
+                          }
+                          showArrow
+                        >
+                          <span className="day-cell-wrapper">
+                            <button
+                              type="button"
+                              className={`day-cell ${level}`}
+                              disabled={isFuture}
+                              onClick={() => handleOpenDialog(date)}
+                              aria-label={`${key} ${isChecked ? '已打卡' : '未打卡'}`}
+                            />
+                          </span>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span>少</span>
+              <div className="flex items-center gap-1">
+                <span className="legend-cell level-0" />
+                <span className="legend-cell level-1" />
+                <span className="legend-cell level-2" />
+                <span className="legend-cell level-3" />
+                <span className="legend-cell level-4" />
+              </div>
+              <span>多</span>
+            </div>
+            <p className="text-sm text-slate-500">
+              点击格子查看详情并确认打卡，数据已保存在本地浏览器。
+            </p>
+          </CardBody>
+        </Card>
+        <section className="stats-section">
+          <div className="stat">
+            <span className="stat-label">累计打卡</span>
+            <span className="stat-value">{Object.keys(activeCheckins).length}</span>
           </div>
-        </div>
-        <div className="legend">
-          <span>少</span>
-          <div className="legend-scale">
-            <span className="legend-cell level-0" />
-            <span className="legend-cell level-1" />
-            <span className="legend-cell level-2" />
-            <span className="legend-cell level-3" />
-            <span className="legend-cell level-4" />
+          <div className="stat">
+            <span className="stat-label">最近打卡</span>
+            <span className="stat-value">
+              {Object.keys(activeCheckins)
+                .sort()
+                .slice(-1)[0] || '暂无'}
+            </span>
           </div>
-          <span>多</span>
-        </div>
-        <p className="hint">
-          点击格子查看详情并确认打卡，数据已保存在本地浏览器。
-        </p>
-      </section>
+          <div className="stat">
+            <span className="stat-label">连续天数</span>
+            <span className="stat-value">
+              {(() => {
+                let streak = 0;
+                let cursor = today;
+                while (true) {
+                  const key = toDateKey(cursor);
+                  if (activeCheckins[key]) {
+                    streak += 1;
+                    cursor = addDays(cursor, -1);
+                  } else {
+                    break;
+                  }
+                }
+                return streak;
+              })()}
+            </span>
+          </div>
+        </section>
+      </div>
 
       <Modal isOpen={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <ModalContent>
@@ -260,40 +306,6 @@ export default function App() {
           )}
         </ModalContent>
       </Modal>
-
-      <section className="stats-section">
-        <div className="stat">
-          <span className="stat-label">累计打卡</span>
-          <span className="stat-value">{Object.keys(activeCheckins).length}</span>
-        </div>
-        <div className="stat">
-          <span className="stat-label">最近打卡</span>
-          <span className="stat-value">
-            {Object.keys(activeCheckins)
-              .sort()
-              .slice(-1)[0] || '暂无'}
-          </span>
-        </div>
-        <div className="stat">
-          <span className="stat-label">连续天数</span>
-          <span className="stat-value">
-            {(() => {
-              let streak = 0;
-              let cursor = today;
-              while (true) {
-                const key = toDateKey(cursor);
-                if (activeCheckins[key]) {
-                  streak += 1;
-                  cursor = addDays(cursor, -1);
-                } else {
-                  break;
-                }
-              }
-              return streak;
-            })()}
-          </span>
-        </div>
-      </section>
     </div>
   );
 }
