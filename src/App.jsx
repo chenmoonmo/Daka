@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
+import { atom, useAtom } from 'jotai';
 import { Button, Card, CardBody, Input } from '@heroui/react';
 import {
   addDays,
@@ -17,6 +18,16 @@ import {
 const DEFAULT_PROJECT = { id: 'default', name: '健身' };
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
+const storedProjects = loadProjects();
+const initialProjects = storedProjects.length ? storedProjects : [DEFAULT_PROJECT];
+const initialActiveProjectId = initialProjects[0]?.id ?? DEFAULT_PROJECT.id;
+const initialCheckins = loadCheckins();
+
+const projectsAtom = atom(initialProjects);
+const activeProjectIdAtom = atom(initialActiveProjectId);
+const checkinsAtom = atom(initialCheckins);
+const newProjectNameAtom = atom('');
+
 function createProject(name) {
   return {
     id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
@@ -25,19 +36,10 @@ function createProject(name) {
 }
 
 export default function App() {
-  const [projects, setProjects] = useState([DEFAULT_PROJECT]);
-  const [activeProjectId, setActiveProjectId] = useState(DEFAULT_PROJECT.id);
-  const [checkins, setCheckins] = useState({});
-  const [newProjectName, setNewProjectName] = useState('');
-
-  useEffect(() => {
-    const storedProjects = loadProjects();
-    if (storedProjects.length) {
-      setProjects(storedProjects);
-      setActiveProjectId(storedProjects[0].id);
-    }
-    setCheckins(loadCheckins());
-  }, []);
+  const [projects, setProjects] = useAtom(projectsAtom);
+  const [activeProjectId, setActiveProjectId] = useAtom(activeProjectIdAtom);
+  const [checkins, setCheckins] = useAtom(checkinsAtom);
+  const [newProjectName, setNewProjectName] = useAtom(newProjectNameAtom);
 
   useEffect(() => {
     saveProjects(projects);
@@ -46,6 +48,17 @@ export default function App() {
   useEffect(() => {
     saveCheckins(checkins);
   }, [checkins]);
+
+  useEffect(() => {
+    if (!projects.length) {
+      setProjects([DEFAULT_PROJECT]);
+      setActiveProjectId(DEFAULT_PROJECT.id);
+      return;
+    }
+    if (!projects.some((project) => project.id === activeProjectId)) {
+      setActiveProjectId(projects[0].id);
+    }
+  }, [activeProjectId, projects, setActiveProjectId, setProjects]);
 
   const activeCheckins = checkins[activeProjectId] || {};
 
