@@ -295,12 +295,12 @@ export default function App() {
                 <p>当前状态：{selectedDateStatus || '未选择'}</p>
               </ModalBody>
               <ModalFooter>
-                <button type="button" onClick={onClose}>
+                <Button type="button" variant="light" onClick={onClose}>
                   取消
-                </button>
-                <button type="button" onClick={handleConfirmCheckin}>
+                </Button>
+                <Button type="button" color="primary" onClick={handleConfirmCheckin}>
                   确认
-                </button>
+                </Button>
               </ModalFooter>
             </>
           )}
