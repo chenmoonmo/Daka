@@ -3,15 +3,10 @@ import {
   Card,
   CardBody,
   Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
   Tooltip,
 } from '@heroui/react';
 import { atom, useAtom } from 'jotai';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   addDays,
   getCalendarWeeks,
@@ -126,13 +121,16 @@ export default function App() {
       : '未打卡'
     : '';
 
-  const levelStyles = {
-    'level-0': 'bg-slate-200 border border-transparent',
-    'level-1': 'bg-emerald-200 border border-emerald-200',
-    'level-2': 'bg-emerald-400 border border-emerald-400',
-    'level-3': 'bg-emerald-500 border border-emerald-500',
-    'level-4': 'bg-emerald-700 border border-emerald-700',
-  };
+  useEffect(() => {
+    if (!isDialogOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        handleCloseDialog();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDialogOpen]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -285,27 +283,35 @@ export default function App() {
         </section>
       </div>
 
-      <Modal isOpen={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>确认打卡</ModalHeader>
-              <ModalBody>
-                <p>日期：{selectedDateKey || '未选择'}</p>
-                <p>当前状态：{selectedDateStatus || '未选择'}</p>
-              </ModalBody>
-              <ModalFooter>
-                <Button type="button" variant="light" onClick={onClose}>
-                  取消
-                </Button>
-                <Button type="button" color="primary" onClick={handleConfirmCheckin}>
-                  确认
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      {isDialogOpen ? (
+        <div className="dialog-overlay" role="presentation" onClick={handleCloseDialog}>
+          <div
+            className="dialog-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="checkin-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="dialog-header">
+              <h2 id="checkin-dialog-title" className="text-base font-semibold text-slate-900">
+                确认打卡
+              </h2>
+            </div>
+            <div className="dialog-body">
+              <p>日期：{selectedDateKey || '未选择'}</p>
+              <p>当前状态：{selectedDateStatus || '未选择'}</p>
+            </div>
+            <div className="dialog-footer">
+              <Button type="button" variant="light" onClick={handleCloseDialog}>
+                取消
+              </Button>
+              <Button type="button" color="primary" onClick={handleConfirmCheckin}>
+                确认
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
