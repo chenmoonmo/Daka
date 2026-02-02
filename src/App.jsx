@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from 'react';
+import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Tooltip } from '@heroui/react';
 import { atom, useAtom } from 'jotai';
-import { Button, Card, CardBody, Input } from '@heroui/react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   addDays,
   getCalendarWeeks,
@@ -17,6 +17,8 @@ import {
 
 const DEFAULT_PROJECT = { id: 'default', name: '健身' };
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
+const selectedDateAtom = atom(null);
+const isDialogOpenAtom = atom(false);
 
 const storedProjects = loadProjects();
 const initialProjects = storedProjects.length ? storedProjects : [DEFAULT_PROJECT];
@@ -78,6 +80,21 @@ export default function App() {
     });
   };
 
+  const handleOpenDialog = (date) => {
+    setSelectedDate(date);
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+  };
+
+  const handleConfirmCheckin = () => {
+    if (!selectedDate) return;
+    handleToggleDay(selectedDate);
+    handleCloseDialog();
+  };
+
   const handleAddProject = (event) => {
     event.preventDefault();
     const trimmed = newProjectName.trim();
@@ -89,6 +106,12 @@ export default function App() {
   };
 
   const today = startOfDay(new Date());
+  const selectedDateKey = selectedDate ? toDateKey(selectedDate) : '';
+  const selectedDateStatus = selectedDateKey
+    ? activeCheckins[selectedDateKey]
+      ? '已打卡'
+      : '未打卡'
+    : '';
 
   const levelStyles = {
     'level-0': 'bg-slate-200 border border-transparent',
@@ -163,94 +186,114 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <div className="grid auto-cols-min grid-flow-col gap-1">
-                {weeks.map((week, weekIndex) => (
-                  <div key={`week-${weekIndex}`} className="grid grid-rows-7 gap-1">
-                    {week.map((date) => {
-                      const key = toDateKey(date);
-                      const isFuture = date > today;
-                      const isChecked = !!activeCheckins[key];
-                      const level = isChecked ? 'level-4' : 'level-0';
-                      return (
-                        <Button
-                          key={key}
+            ))}
+          </div>
+          <div className="weeks">
+            {weeks.map((week, weekIndex) => (
+              <div key={`week-${weekIndex}`} className="week-column">
+                {week.map((date) => {
+                  const key = toDateKey(date);
+                  const isFuture = date > today;
+                  const isChecked = !!activeCheckins[key];
+                  const level = isChecked ? 'level-4' : 'level-0';
+                  return (
+                    <Tooltip
+                      key={key}
+                      content={
+                        <div className="tooltip-content">
+                          <div>{key}</div>
+                          <div>{isChecked ? '已打卡' : '未打卡'}</div>
+                        </div>
+                      }
+                      showArrow
+                    >
+                      <span className="day-cell-wrapper">
+                        <button
                           type="button"
-                          size="sm"
-                          isIconOnly
-                          variant="flat"
-                          aria-label={`${key} ${isChecked ? '已打卡' : '未打卡'}`}
-                          className={`h-3 w-3 min-w-0 rounded-sm p-0 ${levelStyles[level]}`}
+                          className={`day-cell ${level}`}
                           disabled={isFuture}
-                          onClick={() => handleToggleDay(date)}
-                        >
-                          <span className="sr-only">{key}</span>
-                        </Button>
-                      );
-                    })}
-                  </div>
-                ))}
+                          onClick={() => handleOpenDialog(date)}
+                          aria-label={`${key} ${isChecked ? '已打卡' : '未打卡'}`}
+                        />
+                      </span>
+                    </Tooltip>
+                  );
+                })}
               </div>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <span>少</span>
-              <div className="flex gap-1">
-                {Object.values(levelStyles).map((style, index) => (
-                  <span
-                    key={`legend-${index}`}
-                    className={`inline-block h-3 w-3 rounded-sm ${style}`}
-                  />
-                ))}
-              </div>
-              <span>多</span>
-            </div>
-            <p className="text-sm text-slate-500">
-              点击格子即可打卡/取消打卡，数据已保存在本地浏览器。
-            </p>
-          </CardBody>
-        </Card>
+            ))}
+          </div>
+        </div>
+        <div className="legend">
+          <span>少</span>
+          <div className="legend-scale">
+            <span className="legend-cell level-0" />
+            <span className="legend-cell level-1" />
+            <span className="legend-cell level-2" />
+            <span className="legend-cell level-3" />
+            <span className="legend-cell level-4" />
+          </div>
+          <span>多</span>
+        </div>
+        <p className="hint">
+          点击格子查看详情并确认打卡，数据已保存在本地浏览器。
+        </p>
+      </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card className="border border-slate-200 bg-white">
-            <CardBody className="space-y-1">
-              <span className="text-xs text-slate-500">累计打卡</span>
-              <span className="text-2xl font-semibold">
-                {Object.keys(activeCheckins).length}
-              </span>
-            </CardBody>
-          </Card>
-          <Card className="border border-slate-200 bg-white">
-            <CardBody className="space-y-1">
-              <span className="text-xs text-slate-500">最近打卡</span>
-              <span className="text-2xl font-semibold">
-                {Object.keys(activeCheckins)
-                  .sort()
-                  .slice(-1)[0] || '暂无'}
-              </span>
-            </CardBody>
-          </Card>
-          <Card className="border border-slate-200 bg-white">
-            <CardBody className="space-y-1">
-              <span className="text-xs text-slate-500">连续天数</span>
-              <span className="text-2xl font-semibold">
-                {(() => {
-                  let streak = 0;
-                  let cursor = today;
-                  while (true) {
-                    const key = toDateKey(cursor);
-                    if (activeCheckins[key]) {
-                      streak += 1;
-                      cursor = addDays(cursor, -1);
-                    } else {
-                      break;
-                    }
-                  }
-                  return streak;
-                })()}
-              </span>
-            </CardBody>
-          </Card>
-        </section>
-      </div>
+      <Modal isOpen={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader>确认打卡</ModalHeader>
+              <ModalBody>
+                <p>日期：{selectedDateKey || '未选择'}</p>
+                <p>当前状态：{selectedDateStatus || '未选择'}</p>
+              </ModalBody>
+              <ModalFooter>
+                <button type="button" onClick={onClose}>
+                  取消
+                </button>
+                <button type="button" onClick={handleConfirmCheckin}>
+                  确认
+                </button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      <section className="stats-section">
+        <div className="stat">
+          <span className="stat-label">累计打卡</span>
+          <span className="stat-value">{Object.keys(activeCheckins).length}</span>
+        </div>
+        <div className="stat">
+          <span className="stat-label">最近打卡</span>
+          <span className="stat-value">
+            {Object.keys(activeCheckins)
+              .sort()
+              .slice(-1)[0] || '暂无'}
+          </span>
+        </div>
+        <div className="stat">
+          <span className="stat-label">连续天数</span>
+          <span className="stat-value">
+            {(() => {
+              let streak = 0;
+              let cursor = today;
+              while (true) {
+                const key = toDateKey(cursor);
+                if (activeCheckins[key]) {
+                  streak += 1;
+                  cursor = addDays(cursor, -1);
+                } else {
+                  break;
+                }
+              }
+              return streak;
+            })()}
+          </span>
+        </div>
+      </section>
     </div>
   );
 }
