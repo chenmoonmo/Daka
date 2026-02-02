@@ -12,14 +12,14 @@
     "@heroui/react": "^2.0.0",
     "framer-motion": "^11.0.0",
     "jotai": "^2.8.3",
+    "autoprefixer": "^10.4.18",
+    "postcss": "^8.4.35",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "tailwindcss": "^3.4.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
-    "autoprefixer": "^10.4.18",
-    "postcss": "^8.4.35",
-    "tailwindcss": "^3.4.1",
     "vite": "^5.0.0"
   }
 }
