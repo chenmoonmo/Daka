@@ -1,3 +1,5 @@
+import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Tooltip } from '@heroui/react';
+import { atom, useAtom } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
 import {
   addDays,
@@ -15,6 +17,8 @@ import {
 
 const DEFAULT_PROJECT = { id: 'default', name: '健身' };
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
+const selectedDateAtom = atom(null);
+const isDialogOpenAtom = atom(false);
 
 function createProject(name) {
   return {
@@ -28,6 +32,8 @@ export default function App() {
   const [activeProjectId, setActiveProjectId] = useState(DEFAULT_PROJECT.id);
   const [checkins, setCheckins] = useState({});
   const [newProjectName, setNewProjectName] = useState('');
+  const [selectedDate, setSelectedDate] = useAtom(selectedDateAtom);
+  const [isDialogOpen, setIsDialogOpen] = useAtom(isDialogOpenAtom);
 
   useEffect(() => {
     const storedProjects = loadProjects();
@@ -64,6 +70,21 @@ export default function App() {
     });
   };
 
+  const handleOpenDialog = (date) => {
+    setSelectedDate(date);
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+  };
+
+  const handleConfirmCheckin = () => {
+    if (!selectedDate) return;
+    handleToggleDay(selectedDate);
+    handleCloseDialog();
+  };
+
   const handleAddProject = (event) => {
     event.preventDefault();
     const trimmed = newProjectName.trim();
@@ -75,6 +96,12 @@ export default function App() {
   };
 
   const today = startOfDay(new Date());
+  const selectedDateKey = selectedDate ? toDateKey(selectedDate) : '';
+  const selectedDateStatus = selectedDateKey
+    ? activeCheckins[selectedDateKey]
+      ? '已打卡'
+      : '未打卡'
+    : '';
 
   return (
     <div className="page">
@@ -140,14 +167,26 @@ export default function App() {
                   const isChecked = !!activeCheckins[key];
                   const level = isChecked ? 'level-4' : 'level-0';
                   return (
-                    <button
+                    <Tooltip
                       key={key}
-                      type="button"
-                      className={`day-cell ${level}`}
-                      disabled={isFuture}
-                      onClick={() => handleToggleDay(date)}
-                      title={`${key} ${isChecked ? '已打卡' : '未打卡'}`}
-                    />
+                      content={
+                        <div className="tooltip-content">
+                          <div>{key}</div>
+                          <div>{isChecked ? '已打卡' : '未打卡'}</div>
+                        </div>
+                      }
+                      showArrow
+                    >
+                      <span className="day-cell-wrapper">
+                        <button
+                          type="button"
+                          className={`day-cell ${level}`}
+                          disabled={isFuture}
+                          onClick={() => handleOpenDialog(date)}
+                          aria-label={`${key} ${isChecked ? '已打卡' : '未打卡'}`}
+                        />
+                      </span>
+                    </Tooltip>
                   );
                 })}
               </div>
@@ -165,8 +204,32 @@ export default function App() {
           </div>
           <span>多</span>
         </div>
-        <p className="hint">点击格子即可打卡/取消打卡，数据已保存在本地浏览器。</p>
+        <p className="hint">
+          点击格子查看详情并确认打卡，数据已保存在本地浏览器。
+        </p>
       </section>
+
+      <Modal isOpen={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader>确认打卡</ModalHeader>
+              <ModalBody>
+                <p>日期：{selectedDateKey || '未选择'}</p>
+                <p>当前状态：{selectedDateStatus || '未选择'}</p>
+              </ModalBody>
+              <ModalFooter>
+                <button type="button" onClick={onClose}>
+                  取消
+                </button>
+                <button type="button" onClick={handleConfirmCheckin}>
+                  确认
+                </button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
 
       <section className="stats-section">
         <div className="stat">
