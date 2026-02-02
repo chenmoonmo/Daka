@@ -5,3 +5,79 @@
 body {
   @apply bg-slate-50 text-slate-900;
 }
+
+.week-column {
+  @apply grid grid-rows-7 gap-1;
+}
+
+.day-cell-wrapper {
+  @apply block;
+}
+
+.day-cell {
+  @apply h-3.5 w-3.5 rounded-sm transition-transform duration-150 ease-in-out hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.level-0 {
+  @apply border border-transparent bg-slate-200;
+}
+
+.level-1 {
+  @apply border border-emerald-200 bg-emerald-200;
+}
+
+.level-2 {
+  @apply border border-emerald-400 bg-emerald-400;
+}
+
+.level-3 {
+  @apply border border-emerald-500 bg-emerald-500;
+}
+
+.level-4 {
+  @apply border border-emerald-700 bg-emerald-700;
+}
+
+.legend-cell {
+  @apply h-3 w-3 rounded-sm border border-transparent;
+}
+
+.tooltip-content {
+  @apply space-y-1 text-xs;
+}
+
+.stats-section {
+  @apply grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-3;
+}
+
+.stat {
+  @apply flex flex-col gap-1 rounded-lg bg-slate-50 p-3;
+}
+
+.stat-label {
+  @apply text-xs text-slate-500;
+}
+
+.stat-value {
+  @apply text-lg font-semibold text-slate-900;
+}
+
+.dialog-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4;
+}
+
+.dialog-panel {
+  @apply w-full max-w-sm rounded-xl bg-white p-5 shadow-xl;
+}
+
+.dialog-header {
+  @apply border-b border-slate-200 pb-3;
+}
+
+.dialog-body {
+  @apply space-y-2 py-4 text-sm text-slate-600;
+}
+
+.dialog-footer {
+  @apply flex items-center justify-end gap-2 border-t border-slate-200 pt-3;
+}
